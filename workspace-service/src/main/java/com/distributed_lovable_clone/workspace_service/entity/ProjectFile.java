@@ -1,0 +1,39 @@
+package com.distributed_lovable_clone.workspace_service.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Instant;
+
+@Entity
+@Getter
+@Setter
+@Table(name = "project_files")
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ProjectFile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+            @JoinColumn(name = "project_id" , nullable = false)
+    Project project;
+
+    @Column(nullable = false)
+    String path;
+
+    String minioObjectKey;
+
+    @CreationTimestamp
+    Instant createdAt;
+
+    @UpdateTimestamp
+    Instant updatedAt;
+
+
+}

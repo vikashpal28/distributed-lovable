@@ -1,0 +1,192 @@
+package com.distributed_lovable_clone.intelligence_service.service.impl;
+
+import com.distributed_lovable_clone.common_lib.events.FileStoreRequestEvent;
+import com.distributed_lovable_clone.common_lib.security.AuthUtil;
+import com.distributed_lovable_clone.common_lib.type.ChatEventType;
+import com.distributed_lovable_clone.common_lib.type.MessageRole;
+import com.distributed_lovable_clone.intelligence_service.client.WorkspaceClient;
+import com.distributed_lovable_clone.intelligence_service.dto.chat.StreamResponse;
+import com.distributed_lovable_clone.intelligence_service.entity.ChatEvent;
+import com.distributed_lovable_clone.intelligence_service.entity.ChatMessage;
+import com.distributed_lovable_clone.intelligence_service.entity.ChatSession;
+import com.distributed_lovable_clone.intelligence_service.entity.ChatSessionId;
+import com.distributed_lovable_clone.intelligence_service.llm.LlmResponseParser;
+import com.distributed_lovable_clone.intelligence_service.llm.PromptUtils;
+import com.distributed_lovable_clone.intelligence_service.llm.advisor.FileTreeContentAdvisor;
+import com.distributed_lovable_clone.intelligence_service.llm.tool.CodeGenerationTools;
+import com.distributed_lovable_clone.intelligence_service.repository.ChatEventRepository;
+import com.distributed_lovable_clone.intelligence_service.repository.ChatMessageRepository;
+import com.distributed_lovable_clone.intelligence_service.repository.ChatSessionRepository;
+import com.distributed_lovable_clone.intelligence_service.service.AiGenerationService;
+import com.distributed_lovable_clone.intelligence_service.service.UsageService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class AiGenerationServiceImpl implements AiGenerationService {
+
+    private final ChatClient chatClient;
+    private final AuthUtil authUtil;
+    private final LlmResponseParser llmResponseParser;
+    private final ChatSessionRepository chatSessionRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final ChatEventRepository chatEventRepository;
+    private final UsageService usageService;
+    private final FileTreeContentAdvisor fileTreeContentAdvisor;
+    private final WorkspaceClient workspaceClient;
+    private final KafkaTemplate<String , Object> kafkaTemplate;
+    @Override
+    @PreAuthorize("@security.canEditProject(#projectId)")
+    public Flux<StreamResponse> streamResponse(String userMessage, Long projectId) {
+
+//        usageService.checkDailyTokensUsage();
+
+        Long userId = authUtil.getCurrentUserId();
+        ChatSession chatSession = createChatSessionIfNotExist(userId , projectId);
+
+        Map<String , Object> advisorParam = Map.of(
+                "userId" , userId,
+                "projectId" , projectId
+                );
+        StringBuilder fullResponseBuffer = new StringBuilder();
+
+        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId , workspaceClient);
+        AtomicReference<Long> startTime = new AtomicReference<>(System.currentTimeMillis());
+        AtomicReference<Long> endTime = new AtomicReference<>(0L);
+        AtomicReference<Usage> usageRef = new AtomicReference<>();
+
+        return chatClient.prompt()
+                .system(PromptUtils.CODE_GENERATION_SYSTEM_PROMPT)
+                .tools(codeGenerationTools)
+                .user(userMessage)
+                .advisors(
+                        advisorSpec -> {
+                            advisorSpec.params(advisorParam);
+                            advisorSpec.advisors(fileTreeContentAdvisor);
+                        }
+
+                )
+                .stream()
+                .chatResponse()
+                .doOnNext( response -> {
+
+                    var result = response.getResult();
+                    if (result == null) return; // skip the final metadata chunk
+
+                    String content = result.getOutput().getText();
+                    if (content != null && !content.isEmpty() ) {
+                        if(endTime.get() == 0) {
+                            endTime.set(System.currentTimeMillis());
+                        }
+
+                        if(response.getMetadata().getUsage() != null){
+                            usageRef.set(response.getMetadata().getUsage());
+                        }
+                        fullResponseBuffer.append(content);
+                    }
+                })
+                .doOnComplete(()->{
+                    Schedulers.boundedElastic().schedule(() ->{
+//                        parseSavedFiles(fullResponseBuffer.toString() , projectId);
+                        long duration = (endTime.get() - startTime.get())/1000;
+                        finalizeChats(userMessage , chatSession , fullResponseBuffer.toString() , duration , usageRef.get(), userId);
+                    });
+                })
+                .doOnError( error -> log.error("error during Streaming for projectId {}: {}",projectId, error.getMessage(), error))
+                .map(response -> {
+                    var result = response.getResult();
+                    if (result == null) return new StreamResponse("");
+
+                    String text = result.getOutput().getText();
+                    if (text == null) return new StreamResponse("");
+
+                    return new StreamResponse(text);
+                });
+
+    }
+
+    private void finalizeChats(String userMessage , ChatSession chatSession, String fullText , long duration , Usage usage , Long userId ){
+     Long projectId = chatSession.getId().getProjectId();
+        if(usage != null){
+            int totalTokens = usage.getTotalTokens();
+            usageService.recordTokenUsage(chatSession.getId().getUserId(), totalTokens);
+        }
+
+      chatMessageRepository.save(
+              ChatMessage.builder()
+                      .chatSession(chatSession)
+                      .role(MessageRole.USER)
+                      .tokenUsed(usage.getPromptTokens())
+                      .content(userMessage)
+                      .build()
+      );
+
+      ChatMessage assistantChatMessage = ChatMessage.builder()
+              .role(MessageRole.ASSISTANT)
+              .chatSession(chatSession)
+              .content("Assistant_Message")
+              .tokenUsed(usage.getCompletionTokens())
+              .build();
+      assistantChatMessage = chatMessageRepository.save(assistantChatMessage);
+
+        final var chatEvents = llmResponseParser.parseChatEvent(fullText, assistantChatMessage);
+        List<ChatEvent> chatEventList = chatEvents;
+        chatEventList.addFirst(ChatEvent.builder()
+                        .type(ChatEventType.THOUGHT)
+                        .chatMessage(assistantChatMessage)
+                        .content("Thought for "+duration+"s")
+                        .sequenceOrder(0)
+                .build());
+
+        chatEventList.stream()
+                .filter(e -> e.getType() == ChatEventType.FILE_EDIT)
+                        .forEach(e -> {
+                            log.info("stored files {}", e.getFilePath());
+                            String sagaId = UUID.randomUUID().toString();
+                            e.setSagaId(sagaId);
+                            FileStoreRequestEvent fileStoreRequestEvent = new FileStoreRequestEvent(
+                                    projectId ,
+                                    sagaId,
+                                    e.getFilePath(),
+                                    e.getContent(),
+                                    userId
+                            );
+                            log.info("storage request event has been send {}" , e.getFilePath());
+                            kafkaTemplate.send("file-storage-request-event" , "project-"+projectId , fileStoreRequestEvent);
+                        });
+
+        chatEventRepository.saveAll(chatEventList);
+    }
+
+
+    private ChatSession createChatSessionIfNotExist(Long userId, Long projectId) {
+        log.info("create session {}" , userId);
+
+        ChatSessionId chatSessionId = new ChatSessionId(projectId, userId);
+
+        ChatSession chatSession = chatSessionRepository.findById(chatSessionId).orElse(null);
+
+        if(chatSession == null){ // if chat session is  null then it created the session for the user
+            chatSession = ChatSession.builder()
+                    .id(chatSessionId)
+                    .build();
+
+            chatSession = chatSessionRepository.save(chatSession);
+        }
+        return chatSession;
+    }
+}

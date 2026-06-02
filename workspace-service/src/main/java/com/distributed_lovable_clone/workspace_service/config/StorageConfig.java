@@ -1,0 +1,26 @@
+package com.distributed_lovable_clone.workspace_service.config;
+
+import io.minio.MinioClient;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@ConfigurationProperties(prefix = "minio") // it will check the application.yml file for minio configuartion
+@Data
+public class StorageConfig {
+
+    private String url;
+    private String accessKey;
+    private String secretKey;
+
+    @Bean
+    public MinioClient minioClient(){
+        //we have return minio clients
+        return MinioClient.builder()
+                .endpoint(url)
+                .credentials(accessKey , secretKey)
+                .build();
+    }
+}
