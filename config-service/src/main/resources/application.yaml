@@ -9,7 +9,6 @@ spring:
       password: ${GIT_PASSWORD}
 
 server.port: 8888
-
 management:
   endpoints:
     web:
