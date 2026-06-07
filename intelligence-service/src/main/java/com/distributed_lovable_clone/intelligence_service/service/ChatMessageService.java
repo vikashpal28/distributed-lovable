@@ -7,5 +7,5 @@ import org.springframework.ai.chat.model.ChatResponse;
 import java.util.List;
 
 public interface ChatMessageService {
-    List<ChatResponse> getProjectChatHistory(Long projectId);
+    List<com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse> getProjectChatHistory(Long projectId);
 }

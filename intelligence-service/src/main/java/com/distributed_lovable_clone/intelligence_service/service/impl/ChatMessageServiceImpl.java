@@ -11,7 +11,6 @@ import com.distributed_lovable_clone.intelligence_service.repository.ChatSession
 import com.distributed_lovable_clone.intelligence_service.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,7 +26,7 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     private final ChatMapper chatMapper;
 
     @Override
-    public List<ChatResponse> getProjectChatHistory(Long projectId) {
+    public List<com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse> getProjectChatHistory(Long projectId) {
         Long userId = authUtil.getCurrentUserId();
         ChatSession chatSession = chatSessionRepository.getReferenceById(
                 new ChatSessionId(userId , projectId)

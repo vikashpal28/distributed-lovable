@@ -10,6 +10,6 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface ChatMapper {
 
-    List<ChatResponse> fromListOfChatMessage(List<ChatMessage> chatMessageList);
+    List<com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse> fromListOfChatMessage(List<ChatMessage> chatMessageList);
 
 }

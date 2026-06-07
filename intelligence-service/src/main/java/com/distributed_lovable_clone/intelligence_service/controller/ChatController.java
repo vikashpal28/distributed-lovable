@@ -32,7 +32,7 @@ public class ChatController {
     }
 
     @GetMapping("/projects/{projectId}/chat")
-    public ResponseEntity<List<ChatResponse>> getChatHistory(@PathVariable Long projectId){
+    public ResponseEntity<List<com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse>> getChatHistory(@PathVariable Long projectId){
         return ResponseEntity.ok(chatMessageService.getProjectChatHistory(projectId));
 
     }
