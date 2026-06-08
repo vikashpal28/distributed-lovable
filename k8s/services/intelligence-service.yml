@@ -37,7 +37,7 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: INTELLIGENCE_DB_PASSWORD
-            - name: AI_API_KEY
+            - name: SPRING_AI_OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: app-secrets
