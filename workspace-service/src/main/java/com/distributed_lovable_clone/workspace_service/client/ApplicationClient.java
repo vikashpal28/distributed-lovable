@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Optional;
 
-@FeignClient(name = "account-service" , path = "/account" , url = "ACCOUNT_SERVICE_URL")
+@FeignClient(name = "account-service" , path = "/account" , url = "${ACCOUNT_SERVICE_URL:}")
 public interface ApplicationClient {
 
 
