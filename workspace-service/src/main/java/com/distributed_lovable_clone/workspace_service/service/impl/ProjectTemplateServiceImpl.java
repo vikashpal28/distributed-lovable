@@ -47,7 +47,7 @@ public class ProjectTemplateServiceImpl implements ProjectTemplateService {
             log.info("try block {}", projectId);
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder()
-                            .bucket(targetBucket)
+                            .bucket(TEMPLATE_BUCKET)
                             .prefix(TEMPLATE_NAME + "/")
                             .recursive(true)
                             .build()
