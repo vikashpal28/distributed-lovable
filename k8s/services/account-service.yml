@@ -22,6 +22,8 @@ spec:
           ports:
             - containerPort: 9050      
           env:
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: CONFIG_SERVER_URL
@@ -59,11 +61,11 @@ spec:
                   key: APP_FRONTEND_URL
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 50m
+              memory: 240Mi
             limits:
               cpu: 250m
-              memory: 512Mi
+              memory: 380Mi
           readinessProbe:
             httpGet:
               path: /account/actuator/health

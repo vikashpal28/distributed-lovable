@@ -61,6 +61,8 @@ spec:
             - configMapRef:
                 name: lovable-shared-config    
           env:
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: CONFIG_SERVER_URL
@@ -93,11 +95,11 @@ spec:
                   key: JWT_SECRET
           resources:
             requests:
-              cpu: 100m
+              cpu: 50m
               memory: 256Mi
             limits:
               cpu: 500m
-              memory: 512Mi
+              memory: 450Mi
           startupProbe:
             httpGet:
               path: /workspace/actuator/health

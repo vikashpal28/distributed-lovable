@@ -22,6 +22,8 @@ spec:
           ports:
             - containerPort: 8888
           env:
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: GIT_USERNAME
