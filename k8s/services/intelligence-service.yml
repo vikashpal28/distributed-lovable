@@ -23,7 +23,7 @@ spec:
             - containerPort: 9030
           env:
             - name: JAVA_OPTS
-              value: "-XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
+              value: "-XX:MaxRAMPercentage=60.0 -XX:+UseG1GC -XX:TieredStopAtLevel=1 -Dspring.main.lazy-initialization=true"
             - name: SPRING_PROFILES_ACTIVE
               value: k8s
             - name: CONFIG_SERVER_URL
@@ -51,11 +51,11 @@ spec:
                   key: JWT_SECRET
           resources:
             requests:
-              cpu: 50m
-              memory: 256Mi
+              cpu: 100m
+              memory: 320Mi
             limits:
               cpu: 250m
-              memory: 380Mi
+              memory: 512Mi
           readinessProbe:
             httpGet:
               path: /intelligence/actuator/health

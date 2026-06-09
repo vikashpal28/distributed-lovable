@@ -11,6 +11,8 @@ import io.minio.*;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -27,8 +29,11 @@ public class ProjectTemplateServiceImpl implements ProjectTemplateService {
     private final ProjectFileRepository projectFileRepository;
 
     private static final String TEMPLATE_BUCKET = "project-starters";
-    private static final String TARGET_BUCKET = "project";
+    // private static final String TARGET_BUCKET = "project";
     private static final String TEMPLATE_NAME = "react-vite-tailwind-daisyui-starter";
+
+    @Value("${minio.project-bucket}")
+    private String targetBucket;
 
     @Override
     public void initializeProjectFromTemplate(Long projectId) {
@@ -42,7 +47,7 @@ public class ProjectTemplateServiceImpl implements ProjectTemplateService {
             log.info("try block {}", projectId);
             Iterable<Result<Item>> results = minioClient.listObjects(
                     ListObjectsArgs.builder()
-                            .bucket(TEMPLATE_BUCKET)
+                            .bucket(targetBucket)
                             .prefix(TEMPLATE_NAME + "/")
                             .recursive(true)
                             .build()
@@ -59,7 +64,7 @@ public class ProjectTemplateServiceImpl implements ProjectTemplateService {
 
                 minioClient.copyObject(
                         CopyObjectArgs.builder()
-                                .bucket(TARGET_BUCKET)
+                                .bucket(targetBucket)
                                 .object(destKey)
                                 .source(
                                         CopySource.builder()

@@ -99,7 +99,7 @@ spec:
               memory: 256Mi
             limits:
               cpu: 500m
-              memory: 450Mi
+              memory: 512Mi
           startupProbe:
             httpGet:
               path: /workspace/actuator/health
