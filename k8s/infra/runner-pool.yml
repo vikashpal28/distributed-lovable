@@ -19,10 +19,11 @@ spec:
         - name: workspace
           emptyDir: {}
       containers:
-        # 1. THE RUNNER (Vite / Node.js)
+        # --- 1. THE DYNAMIC RUNNER ---
         - name: runner
           image: node:20-alpine
           workingDir: /app
+          # Keep the pool alive and generic at boot
           command: ["/bin/sh", "-c", "sleep infinity"]
           volumeMounts:
             - name: workspace
@@ -31,16 +32,17 @@ spec:
             - containerPort: 5173
           resources:
             requests:
-              memory: "50Mi"
-              cpu: "50m"
-            limits:
               memory: "256Mi"
-              cpu: "300m"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
 
-        # 2. THE SYNCER (MinIO mc)
+        # --- 2. THE DYNAMIC SYNCER ---
         - name: syncer
           image: minio/mc
-          # Revised command to configure the host alias and start an automatic watching sync loop
+          workingDir: /app
+          # Pre-configured with MinIO access, waiting for the dynamic sync command
           command: ["/bin/sh", "-c", "sleep infinity"]
           env:
             - name: MINIO_USER
@@ -53,7 +55,6 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: MINIO_ROOT_PASSWORD
-            # Constructing the host URL for the internal MinIO service
             - name: MC_HOST_myminio
               value: "http://$(MINIO_USER):$(MINIO_PASS)@minio.lovable-core.svc.cluster.local:9000"
           volumeMounts:
