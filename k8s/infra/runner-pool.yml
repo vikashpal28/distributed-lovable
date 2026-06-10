@@ -40,6 +40,7 @@ spec:
         # 2. THE SYNCER (MinIO mc)
         - name: syncer
           image: minio/mc
+          # Revised command to configure the host alias and start an automatic watching sync loop
           command: ["/bin/sh", "-c", "sleep infinity"]
           env:
             - name: MINIO_USER

@@ -71,11 +71,11 @@ spec:
               value: "6PMpHYL9QkeyXRj9Nrp4KA"
           resources:
             requests:
-              cpu: 10m
+              cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 200m
-              memory: 512Mi
+              cpu: 400m
+              memory: 1Gi
           volumeMounts:
             - name: kafka-data
               mountPath: /var/lib/kafka/data
