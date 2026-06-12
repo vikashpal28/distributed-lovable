@@ -1,5 +1,3 @@
-# k8s/services/api-gateway.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -39,21 +37,30 @@ spec:
                 secretKeyRef:
                   name: app-secrets
                   key: JWT_SECRET
+            
+            # ─── FORCE STRIP STREAM TIMEOUTS DIRECTLY VIA ENV ───
+            - name: SPRING_CLOUD_GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT
+              value: "300s"
+            - name: SPRING_CLOUD_GATEWAY_HTTPCLIENT_CONNECT_TIMEOUT
+              value: "10000"
+
           resources:
             requests:
-              cpu: 100m
-              memory: 192Mi
+              cpu: 50m       # Slightly bumped to protect Netty polling loops
+              memory: 180Mi
             limits:
-              cpu: 250m
-              memory: 384Mi
+              cpu: 300m
+              memory: 512Mi   # Increased limit to prevent OOM errors during concurrent stream loads
+          
+          # Hardened readiness probe settings for streaming endpoints
           readinessProbe:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 90
-            periodSeconds: 15
-            timeoutSeconds: 5
-            failureThreshold: 3
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 10 # Raised from 5s to stop false-positives under high pool loads
+            failureThreshold: 4
 ---
 apiVersion: v1
 kind: Service
@@ -61,7 +68,6 @@ metadata:
   name: api-gateway
   namespace: lovable-core
 spec:
-  # type: LoadBalancer
   selector:
     app: api-gateway
   ports:

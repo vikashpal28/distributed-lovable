@@ -4,15 +4,40 @@ metadata:
   name: lovable-main-ingress
   namespace: lovable-core
   annotations:
+    kubernetes.io/ingress.class: "nginx"
+    
+    # ─── FORCE INGRESS TO STAY ON PORT 80 HTTP ONLY ───
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    
+    # ─── THE MAGIC FIX: TELL SPRING BOOT IT IS SECURE ───
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Proto "https";
+      proxy_set_header X-Forwarded-Port "443";
+    
+    # Timeouts extended for long-lived WebFlux AI streams
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "75"
+    
+    # SSE Streaming updates: Disables buffering so tokens drop instantly
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
 spec:
   ingressClassName: "nginx"
   rules:
-  # 1. Main Website Route (The Frontend!)
+  # 1. Main Website Route (Frontend + API Split)
   - host: "codegenai.online"
     http:
       paths:
+      # ─── NEW: Send all /api traffic to the Java Backend ───
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 80
+      # ─── EXISTING: Send everything else to the Frontend ───
       - path: /
         pathType: Prefix
         backend:
@@ -33,7 +58,7 @@ spec:
               number: 80
 
   # 2. Previews Route (Wildcard Routing)
-  - host: "*.previews.codegenai.online"
+  - host: "*.codegenai.online"
     http:
       paths:
       - path: /
@@ -44,7 +69,7 @@ spec:
             port:
               number: 80
   
-  # 3. API Gateway Route
+  # 3. API Gateway Route (Keep this if external services need to call the API directly)
   - host: "api.codegenai.online"
     http:
       paths:
