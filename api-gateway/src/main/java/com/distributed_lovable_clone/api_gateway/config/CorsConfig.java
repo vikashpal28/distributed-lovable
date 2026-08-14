@@ -17,8 +17,8 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter(){
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(Arrays.asList(
-                "http://codingshuttle.in",
-                "http://www.codingshuttle.in",
+                "http://codegenai.online",
+                "http://www.codegenai.online",
                 "http://localhost:5173"
         ));
         corsConfiguration.setMaxAge(3600L);
