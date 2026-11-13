@@ -2,7 +2,6 @@ package com.distributed_lovable_clone.intelligence_service.security;
 
 import com.distributed_lovable_clone.common_lib.type.ProjectPermission;
 import com.distributed_lovable_clone.intelligence_service.client.WorkspaceClient;
-import com.openai.errors.UnauthorizedException;
 import feign.FeignException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;

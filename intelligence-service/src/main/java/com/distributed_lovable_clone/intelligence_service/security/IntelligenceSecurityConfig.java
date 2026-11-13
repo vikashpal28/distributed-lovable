@@ -3,7 +3,6 @@ package com.distributed_lovable_clone.intelligence_service.security;
 import com.distributed_lovable_clone.common_lib.security.JwtAuthFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;

@@ -5,7 +5,7 @@ import com.distributed_lovable_clone.intelligence_service.dto.chat.ChatRequest;
 import com.distributed_lovable_clone.intelligence_service.service.AiGenerationService;
 import com.distributed_lovable_clone.intelligence_service.service.ChatMessageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.chat.model.ChatResponse;
+import com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
@@ -32,7 +32,7 @@ public class ChatController {
     }
 
     @GetMapping("/projects/{projectId}/chat")
-    public ResponseEntity<List<com.distributed_lovable_clone.intelligence_service.dto.chat.ChatResponse>> getChatHistory(@PathVariable Long projectId){
+    public ResponseEntity<List<ChatResponse>> getChatHistory(@PathVariable Long projectId){
         return ResponseEntity.ok(chatMessageService.getProjectChatHistory(projectId));
 
     }

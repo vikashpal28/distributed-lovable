@@ -2,7 +2,6 @@ package com.distributed_lovable_clone.workspace_service.contoller;
 
 
 import com.distributed_lovable_clone.common_lib.dto.FileTreeDto;
-import com.distributed_lovable_clone.workspace_service.dto.project.FileContentResponse;
 import com.distributed_lovable_clone.workspace_service.service.ProjectFileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

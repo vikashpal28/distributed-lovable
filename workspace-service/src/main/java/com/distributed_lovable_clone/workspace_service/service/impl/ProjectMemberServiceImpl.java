@@ -104,9 +104,9 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
     public void removeMember(Long projectId, Long memberId) {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(projectId , userId);
-//        if(!project.getOwner().getId().equals(userId)){
-//            throw  new RuntimeException("Not allowed");
-//        }
+    //    if(!project.getOwner().getId().equals(userId)){
+    //        throw  new RuntimeException("Not allowed");
+    //    }
         ProjectMemberId projectMemberId = new ProjectMemberId(projectId , memberId);
         if(!projectMemberRepository.existsById(projectMemberId)){
             throw new RuntimeException("cannot invite once again");
