@@ -25,10 +25,12 @@ export function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const userId = getUserInfo()?.id;
+  const chatStorageKey = userId != null && projectId ? `chat_${userId}_${projectId}` : null;
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    if (projectId) {
-      const saved = localStorage.getItem(`chat_${projectId}`);
+    if (chatStorageKey) {
+      const saved = localStorage.getItem(chatStorageKey);
       if (saved) {
         try {
           return JSON.parse(saved);
@@ -53,6 +55,7 @@ export function ProjectView() {
 
   // Track edited files for current streaming response
   const currentEditedFilesRef = useRef<string[]>([]);
+  const activeChatKeyRef = useRef<string | null>(null);
 
   // Check authentication
   useEffect(() => {
@@ -61,28 +64,38 @@ export function ProjectView() {
     }
   }, [navigate]);
 
-  // Save chat history to local storage whenever it changes
+  // Load chat history when the project or signed-in user changes
   useEffect(() => {
-    if (projectId) {
-      localStorage.setItem(`chat_${projectId}`, JSON.stringify(messages));
-    }
-  }, [messages, projectId]);
+    let cancelled = false;
+    let cachedMessages: ChatMessage[] = [];
 
-  // Load chat history on mount
-  useEffect(() => {
+    if (chatStorageKey) {
+      try {
+        const saved = localStorage.getItem(chatStorageKey);
+        const parsed = saved ? JSON.parse(saved) : [];
+        if (Array.isArray(parsed)) cachedMessages = parsed;
+      } catch (error) {
+        console.warn("Failed to read cached chat history:", error);
+      }
+    }
+
     const loadData = async () => {
       if (!projectId) return;
+
+      activeChatKeyRef.current = null;
+      setMessages([]);
+      setIsLoadingHistory(true);
 
       if (Number(projectId) > 1000000000000) {
         return; // Stop API calls if it's a fake ID
       }
 
-      setIsLoadingHistory(true);
       try {
         const [history, projectData] = await Promise.all([
           api.getChatHistory(projectId),
           api.getProject(projectId)
         ]);
+        if (cancelled) return;
 
         const formattedMessages: ChatMessage[] = history.map((msg: any) => {
           // Handle Spring AI org.springframework.ai.chat.model.ChatResponse structure
@@ -116,21 +129,14 @@ export function ProjectView() {
         });
 
         console.log("Loaded chat history:", formattedMessages);
-        
-        setMessages((prev) => {
-          if (formattedMessages.length === 0) return prev;
-          
-          const merged = [...prev];
-          formattedMessages.forEach((msg) => {
-            if (!merged.find((m) => m.id === msg.id)) {
-              merged.push(msg);
-            }
-          });
-          return merged;
-        });
+
+        activeChatKeyRef.current = chatStorageKey;
+        // The scoped cache is a fallback for chat not yet persisted by the API.
+        setMessages(formattedMessages.length > 0 ? formattedMessages : cachedMessages);
         
         setProject(projectData);
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to load project data:", error);
         toast({
           title: "Error",
@@ -139,12 +145,22 @@ export function ProjectView() {
         });
         navigate("/projects");
       } finally {
-        setIsLoadingHistory(false);
+        if (!cancelled) setIsLoadingHistory(false);
       }
     };
 
     loadData();
-  }, [projectId, toast]);
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, userId, chatStorageKey, toast]);
+
+  // Save chat history only after it has loaded for the current account/project.
+  useEffect(() => {
+    if (chatStorageKey && activeChatKeyRef.current === chatStorageKey) {
+      localStorage.setItem(chatStorageKey, JSON.stringify(messages));
+    }
+  }, [messages, chatStorageKey]);
 
   const handleLogout = () => {
     removeAuthToken();

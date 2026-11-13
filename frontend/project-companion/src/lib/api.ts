@@ -30,7 +30,12 @@ export const BASE_URL = isProduction ? "https://api.codegenai.online" : "";
 
 export const getAuthToken = () => localStorage.getItem("auth_token");
 export const setAuthToken = (token: string) => localStorage.setItem("auth_token", token);
-export const removeAuthToken = () => localStorage.removeItem("auth_token");
+export const removeAuthToken = () => {
+  localStorage.removeItem("auth_token");
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("chat_"))
+    .forEach((key) => localStorage.removeItem(key));
+};
 export const isAuthenticated = () => !!getAuthToken();
 
 const getAuthHeaders = (): HeadersInit => {

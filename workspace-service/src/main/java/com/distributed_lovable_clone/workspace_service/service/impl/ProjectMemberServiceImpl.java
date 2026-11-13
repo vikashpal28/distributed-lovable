@@ -43,12 +43,20 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
         Long userId = authUtil.getCurrentUserId();
         Project project = getAccessibleProjectById(projectId, userId);
 
-        return   projectMemberRepository.findByIdProjectId(projectId)
-                        .stream()
-                        .map(projectMemberMapper::toProjectMemberResponseFromMember)
-                        .toList();
-
-//        return memberResponsesList;
+        return projectMemberRepository.findByIdProjectId(projectId)
+                .stream()
+                .map(member -> {
+                    UserDto user = applicationClient.getUserById(member.getId().getUserId())
+                            .orElse(null);
+                    return new MemberResponse(
+                            member.getId().getUserId(),
+                            user != null ? user.username() : null,
+                            user != null ? user.name() : null,
+                            member.getProjectRole(),
+                            member.getInvitedAt()
+                    );
+                })
+                .toList();
     }
 
     @Override
@@ -116,8 +124,7 @@ public class ProjectMemberServiceImpl implements ProjectMemberService {
 
     }
 
-    public Project getAccessibleProjectById(Long id, Long projectId) {
-        Long userId = authUtil.getCurrentUserId();
+    public Project getAccessibleProjectById(Long projectId, Long userId) {
         return projectRepository.findAccessibleProjectById(projectId, userId).orElseThrow();
     }
 
