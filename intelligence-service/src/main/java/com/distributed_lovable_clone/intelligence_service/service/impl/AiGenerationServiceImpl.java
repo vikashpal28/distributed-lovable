@@ -28,6 +28,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -66,8 +68,9 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                 );
         StringBuilder fullResponseBuffer = new StringBuilder();
 
-        SecurityContext securityContext = SecurityContextHolder.getContext();
-        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId , workspaceClient , securityContext);
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        String authHeader = (attrs != null) ? attrs.getRequest().getHeader("Authorization") : null;
+        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId , workspaceClient , authHeader);
         AtomicReference<Long> startTime = new AtomicReference<>(System.currentTimeMillis());
         AtomicReference<Long> endTime = new AtomicReference<>(0L);
         AtomicReference<Usage> usageRef = new AtomicReference<>();

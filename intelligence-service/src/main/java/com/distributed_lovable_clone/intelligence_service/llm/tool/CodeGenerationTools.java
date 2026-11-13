@@ -19,7 +19,7 @@ public class CodeGenerationTools {
 
     private final Long projectId;
     private final WorkspaceClient workspaceClient;
-    private final SecurityContext securityContext;
+    private final String authorizationHeader;
 
     @Tool(name = "read_files",
             description = "Read the content of files. Only input the file names present inside the FILE_TREE. DO NOT input any path which is not present under the FILE_TREE.")
@@ -27,25 +27,18 @@ public class CodeGenerationTools {
             @ToolParam(description = "List of relative paths (e.g., ['src/App.tsx'])")
             List<String> paths
     ){
-        // <-- SET SECURITY CONTEXT ON THIS THREAD
-        SecurityContext previousContext = SecurityContextHolder.getContext();
-        try {
-            SecurityContextHolder.setContext(securityContext);
+
             List<String> result = new ArrayList<>();
 
             for (String path : paths) {
                 String classPath = path.startsWith("/") ? path.substring(1) : path;
                 log.info("Request the file {}", classPath);
-                String content = workspaceClient.getFileContent(projectId, classPath);
+                String content = workspaceClient.getFileContent(projectId, classPath , authorizationHeader);
                 result.add(String.format(
                         "--- START OF FILE: %s  ---\n%s\n--- END OF FILE ---",
                         classPath, content
                 ));
             }
             return result;
-        }finally {
-            // <-- CLEAN UP THREAD CONTEXT
-            SecurityContextHolder.setContext(previousContext);
-        }
     }
 }

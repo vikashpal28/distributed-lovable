@@ -5,6 +5,7 @@ import com.distributed_lovable_clone.common_lib.type.ProjectPermission;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(name = "workspace-service", path = "/workspace", url = "${WORKSPACE_SERVICE_URL:}")
@@ -14,7 +15,7 @@ public interface WorkspaceClient {
     FileTreeDto getFileTree(@PathVariable("projectId") Long projectId);
 
     @GetMapping("/internal/v1/projects/{projectId}/files/content")
-    String getFileContent(@PathVariable("projectId") Long projectId, @RequestParam("path") String path);
+    String getFileContent(@PathVariable("projectId") Long projectId, @RequestParam("path") String path,  @RequestHeader("Authorization") String authorization);
 
     // FIX: Added /internal/v1 and explicitly named the @RequestParam
     @GetMapping("/internal/v1/projects/{projectId}/permissions/check")
