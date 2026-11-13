@@ -39,7 +39,6 @@ public class ProjectFileServiceImpl implements ProjectFileService {
     @Value("${minio.project-bucket}")
     private String projectBucket;
 
-    // private static final String BUCKET_NAME = "project";
 
 
     @Override

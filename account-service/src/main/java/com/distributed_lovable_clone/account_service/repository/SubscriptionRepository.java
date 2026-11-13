@@ -19,6 +19,5 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     Optional<Subscription> findByStripeSubscriptionId(String gatewaySubscriptionId);
 
 
-    Optional<Subscription> findFirstByUserIdAndStatusInOrderByCreatedAtDesc(Long userId, Set<SubscriptionStatus> active);
 
 }

@@ -55,6 +55,6 @@ public class FileStorageConsumer {
                 .success(success)
                 .errorMessage(error)
                 .build();
-        kafkaTemplate.send("file-storage-response-event", response);
+        kafkaTemplate.send("file-stored-responses", response);
     }
 }
