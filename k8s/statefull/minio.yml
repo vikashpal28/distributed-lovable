@@ -16,6 +16,9 @@ spec:
       labels:
         app: minio
     spec:
+      securityContext:
+        fsGroup: 65532
+        fsGroupChangePolicy: Always
       containers:
         - name: minio
           image: cgr.dev/chainguard/minio:latest
