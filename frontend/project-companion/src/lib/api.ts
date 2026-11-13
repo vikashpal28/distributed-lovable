@@ -24,11 +24,8 @@ import {
 
 const isProduction = import.meta.env.MODE === "production";
 
-// Force the app to use your API Gateway subdomain in production, 
-// and localhost when you are developing on your laptop.
-export const BASE_URL = isProduction
-  ? "https://api.codegenai.online"
-  : "http://localhost:8080";
+// In development, use Vite's proxy so local testing does not depend on API CORS settings.
+export const BASE_URL = isProduction ? "https://api.codegenai.online" : "";
 
 
 export const getAuthToken = () => localStorage.getItem("auth_token");

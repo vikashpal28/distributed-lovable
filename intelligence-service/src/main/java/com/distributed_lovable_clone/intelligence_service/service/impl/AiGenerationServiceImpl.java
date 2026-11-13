@@ -25,6 +25,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -64,7 +66,8 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                 );
         StringBuilder fullResponseBuffer = new StringBuilder();
 
-        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId , workspaceClient);
+        SecurityContext securityContext = SecurityContextHolder.getContext();
+        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId , workspaceClient , securityContext);
         AtomicReference<Long> startTime = new AtomicReference<>(System.currentTimeMillis());
         AtomicReference<Long> endTime = new AtomicReference<>(0L);
         AtomicReference<Usage> usageRef = new AtomicReference<>();

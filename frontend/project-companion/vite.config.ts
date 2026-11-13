@@ -14,9 +14,9 @@ export default defineConfig(({ mode }) => ({
     // Fixed the syntax error here by isolating the conditional configuration
     proxy: mode === "development" ? {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'https://api.codegenai.online',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     } : undefined,
   },
